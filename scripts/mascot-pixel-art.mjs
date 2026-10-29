@@ -8,6 +8,8 @@ const PAPER = '#FFFDF5';
 const GREEN = '#3AAB7C';
 const GOLD = '#D9A441';
 const RED = '#B94236';
+const BOB_COLOR = '#6B7280';
+const BOB_INK = '#1F2937';
 const VIEW_BOX = [-20, -40, 240, 220];
 
 export const stateDefinitions = [
@@ -155,7 +157,7 @@ function walkingFrames(reference) {
 export function buildStates(reference) {
   const baseStates = stateDefinitions.map(([name, title, description, duration], number) => {
     let frames;
-    const draw = options => actor(reference, options);
+    const draw = options => drawBob(reference, options);
     if (name === 'using-tool') frames = reference.animations.gym.frames.map(f => ({ time: f.time, shapes: shift(f.shapes, 19, 28) }));
     else if (name === 'walking') frames = walkingFrames(reference);
     else if (name === 'done') {
@@ -212,15 +214,15 @@ export function buildStates(reference) {
     return { ...base, number: baseStates.length + index + 1,
       name: `${baseState}-${accessory}`, baseState, accessory, title, label: title,
       description: `${base.description} Wearing ${accessory.replaceAll('-', ' ')}.`,
-      frames: base.frames.map(frame => ({ ...frame, shapes: [...frame.shapes, ...accessoryShapes(frame.shapes, accessory)] })),
+      frames: base.frames.map(frame => ({ ...frame, shapes: [...frame.shapes, ...bobAccessoryShapes(frame.shapes, accessory)] })),
     };
   }), ...buildFluidStates(baseStates.length + accessoryVariants.length + 1, {
-    draw: options => actor(reference, options), rect, shift, glyph, check,
+    draw: options => drawBob(reference, options), rect, shift, glyph, check,
     frameBox, book, pencil, list, walking: walkingFrames(reference),
     mini, terminal, glass, globe, order: stateDefinitions.map(s=>s[0]),
     titles: Object.fromEntries(stateDefinitions.map(s=>[s[0],s[1]])),
   }), ...buildGagStates(baseStates.length + accessoryVariants.length + stateDefinitions.length + 1, {
-    draw: options => actor(reference, options), rect, shift, glyph, frameBox,
+    draw: options => drawBob(reference, options), rect, shift, glyph, frameBox,
   })];
 }
 
@@ -276,9 +278,110 @@ function accessoryShapes(shapes, accessory) {
   ];
 }
 
+function bobAccessoryShapes(shapes, accessory) {
+  const head = shapes.find(s => s.fill === BOB_COLOR && s.w === 85 && s.h === 85);
+  if (!head) throw new Error(`No Bob head anchor for ${accessory}`);
+  const x = head.x, y = head.y;
+  const purple = '#6943AD', lavender = '#B994F2', blue = '#337FB7';
+  if (accessory === 'wizard-hat') return [
+    rect(x - 8,y - 8,101,8,purple), rect(x + 6,y - 20,73,12,purple),
+    rect(x + 16,y - 34,53,14,purple), rect(x + 26,y - 48,33,14,purple),
+    rect(x + 36,y - 62,13,14,purple), rect(x + 39,y - 70,13,8,purple),
+    rect(x + 6,y - 20,73,5,lavender), rect(x + 37,y - 41,7,17,GOLD), rect(x + 32,y - 36,17,7,GOLD),
+  ];
+  if (accessory === 'sunglasses') {
+    return [
+      rect(x + 10, y - 2, 65, 24, BOB_INK),
+      rect(x + 13, y + 1, 25, 18, '#9CA3AF'),
+      rect(x + 47, y + 1, 25, 18, '#9CA3AF'),
+      rect(x + 75, y + 8, 15, 4, BOB_INK),
+    ];
+  }
+  if (accessory === 'crown') return [
+    rect(x + 5,y - 14,75,14,GOLD), rect(x + 5,y - 30,10,16,GOLD),
+    rect(x + 37,y - 37,11,23,GOLD), rect(x + 70,y - 30,10,16,GOLD),
+    rect(x + 38,y - 12,9,8,RED), rect(x + 12,y - 8,5,5,PAPER), rect(x + 67,y - 8,5,5,PAPER),
+  ];
+  if (accessory === 'nightcap') return [
+    rect(x + 2,y - 7,81,7,PAPER), rect(x + 8,y - 22,69,15,blue),
+    rect(x + 18,y - 35,49,13,blue), rect(x + 38,y - 45,39,10,blue),
+    rect(x + 67,y - 35,20,10,blue), rect(x + 77,y - 25,10,10,blue),
+    rect(x + 76,y - 16,15,12,PAPER), rect(x + 30,y - 29,5,5,PAPER),
+  ];
+  return [
+    rect(x + 3,y - 7,79,7,blue), rect(x + 12,y - 19,61,12,RED),
+    rect(x + 25,y - 28,35,9,GOLD), rect(x + 40,y - 40,5,12,INK),
+    rect(x + 12,y - 45,61,5,GREEN), rect(x + 35,y - 48,15,11,GOLD),
+  ];
+}
+
+function bobBody(x, y) {
+  const shapes = [];
+  shapes.push(rect(x, y, 85, 85, BOB_COLOR));
+  shapes.push(rect(x + 15, y + 15, 20, 20, BOB_INK));
+  shapes.push(rect(x + 50, y + 15, 20, 20, BOB_INK));
+  shapes.push(rect(x + 25, y + 50, 35, 10, BOB_INK));
+  return shapes;
+}
+
+function bobArms(side, pose, x, y) {
+  const baseX = side === 'left' ? x - 20 : x + 85;
+  const baseY = y + 15;
+  if (pose === 'rest') return [rect(baseX, baseY, 20, 40, BOB_COLOR)];
+  if (pose === 'down') return [rect(baseX, baseY + 10, 20, 40, BOB_COLOR)];
+  if (pose === 'point') return [rect(baseX, baseY, 15, 35, BOB_COLOR), rect(baseX - (side === 'left' ? -5 : 20), baseY - 5, 15, 10, BOB_COLOR)];
+  if (pose === 'hold') return [rect(baseX - (side === 'left' ? -5 : 5), baseY + 25, 15, 30, BOB_COLOR)];
+  if (pose === 'wave' || pose === 'wave-out' || pose === 'wave-in') return [rect(baseX, baseY, 10, 35, BOB_COLOR), rect(baseX - (side === 'left' ? -5 : 15), baseY - 15, 20, 20, BOB_COLOR)];
+  if (pose === 'head') return [rect(baseX, baseY - 15, 15, 45, BOB_COLOR)];
+  return [rect(baseX, baseY, 20, 40, BOB_COLOR)];
+}
+
+function bobEyes(eyes, x, y, gazeX = 0, gazeY = 0) {
+  const lx = x + 20 + gazeX;
+  const rx = x + 50 + gazeX;
+  const ey = y + 20 + gazeY;
+  if (eyes === 'closed') return [rect(lx, ey, 20, 5, BOB_INK), rect(rx, ey, 20, 5, BOB_INK)];
+  if (eyes === 'happy') return [rect(lx, ey, 20, 10, BOB_INK), rect(lx + 5, ey - 5, 10, 5, BOB_INK), rect(rx, ey, 20, 10, BOB_INK), rect(rx + 5, ey - 5, 10, 5, BOB_INK)];
+  return [rect(lx, ey, 20, 20, BOB_INK), rect(rx, ey, 20, 20, BOB_INK)];
+}
+
+function bobGlasses(x, y, gazeX = 0, gazeY = 0) {
+  const lx = x + 12 + gazeX;
+  const rx = x + 53 + gazeX;
+  const ey = y + 17 + gazeY;
+  return [
+    rect(lx - 2, ey - 2, 34, 26, BOB_INK),
+    rect(rx - 2, ey - 2, 34, 26, BOB_INK),
+    rect(lx + 1, ey + 1, 28, 20, '#9CA3AF'),
+    rect(rx + 1, ey + 1, 28, 20, '#9CA3AF'),
+    rect(lx + 34, ey + 7, 19, 4, BOB_INK),
+  ];
+}
+
+function bobLegs(x, y, planted = false, footLift = []) {
+  const shapes = [];
+  shapes.push(rect(x + 15, y + 85 + (planted ? 0 : 0), 20, 26, BOB_COLOR));
+  shapes.push(rect(x + 50, y + 85 + (planted ? 0 : 0), 20, 26, BOB_COLOR));
+  if (footLift.includes(0)) shapes[0].y -= 5;
+  if (footLift.includes(1)) shapes[1].y -= 5;
+  return shapes;
+}
+
+function drawBob(reference, options = {}) {
+  const { dx = 0, dy = 0, gazeX = 0, gazeY = 0, eyes = 'open', left = 'rest', right = 'rest', lean = 0, planted = false, footLift = [] } = options;
+  const x = 19 + dx;
+  const y = 28 + dy;
+  const shapes = [...bobBody(x, y), ...bobLegs(x, y, planted, footLift), ...bobArms('left', left, x, y), ...bobArms('right', right, x, y)];
+  const eyeShapes = bobEyes(eyes, x, y, gazeX, gazeY);
+  const glasses = bobGlasses(x, y, gazeX, gazeY);
+  return [...shapes, ...eyeShapes, ...glasses];
+}
+
 function colour(fill) {
   if (fill.toUpperCase() === CORAL) return 'var(--cm-color, #DD775B)';
+  if (fill.toUpperCase() === BOB_COLOR.toUpperCase()) return 'var(--cm-color, #6B7280)';
   if (['BLACK', '#000', '#000000', 'RGB(0, 0, 0)'].includes(fill.toUpperCase())) return 'var(--cm-ink, #000000)';
+  if (fill.toUpperCase() === BOB_INK.toUpperCase()) return 'var(--cm-ink, #1F2937)';
   return fill;
 }
 export function shapeMarkup(shapes) {

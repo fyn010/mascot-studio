@@ -40,7 +40,7 @@ export interface ClaudeMascotProps extends Omit<SVGProps<SVGSVGElement>, 'childr
 }
 
 function SpriteMascot({
-  state = 'idle', size = 160, color = '#DD775B', eyeColor = '#000000',
+  state = 'idle', size = 160, color = '#6B7280', eyeColor = '#1F2937',
   speed = 1, paused = false, loop, decorative = false, label,
   className = '', style, onDoneComplete, ...props
 }: ClaudeMascotProps) {

@@ -110,7 +110,7 @@
         240,
         220
       ],
-      "poseCount": 4,
+      "poseCount": 3,
       "frameCount": 12,
       "file": "greeting.svg"
     },
@@ -518,7 +518,7 @@
       ],
       "baseState": "greeting",
       "accessory": "crown",
-      "poseCount": 4,
+      "poseCount": 3,
       "frameCount": 12,
       "file": "greeting-crown.svg"
     },
